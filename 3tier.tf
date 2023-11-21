@@ -2,11 +2,11 @@ terraform {
   required_providers {
        azurerm = {  
        source = "hashicorp/azurerm"
-       version = ">= 0.13"
+       version = "=3.81.0"
       }
   }
 }
- # This block goes outside of the required_providers block!
+
 provider "azurerm" {
   features {}
 }
@@ -16,17 +16,17 @@ resource "azurerm_resource_group" "sample-resource" {
 }
 
 resource "azurerm_virtual_network" "vnet" {
-  name ="sample-vnet"
+  name ="sample-vn"
   address_space = ["10.0.0.0/16"]
   location = "eastus"
   resource_group_name = azurerm_resource_group.sample-resource.name
 }
 
 resource "azurerm_subnet" "web_subnet" {
-  name = "webb-subnet"
+  name = "webb-sub"
   resource_group_name = azurerm_resource_group.sample-resource.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes = ["10.0.0.0/24"]
+  address_prefixes = ["10.0.1.0/24"]
 }
 
 resource "azurerm_network_interface" "web_nic" {
@@ -49,16 +49,34 @@ resource "azurerm_virtual_machine" "web_vm" {
   resource_group_name = azurerm_resource_group.sample-resource.name
 
   storage_os_disk {
-    name = "web-os"
-    create_option = "FromImage"
+   name = "web-os"
+   create_option = "fromimage"  
   }
+
+ storage_image_reference { 
+   publisher= "MicrosoftWindowsServer"         
+   offer= "WindowsServer"           
+   sku="2019-Datacenter"        
+   version= "latest"
+ }
+
+ os_profile {
+    computer_name  = "webbvm"
+    admin_username = "testadmin"
+    admin_password = "Password1234!"
+  }
+
+  os_profile_windows_config {
+    provision_vm_agent =  "false"  
+}
+
 }
 
 resource "azurerm_subnet" "app_subnet" {
-  name = "appl-subnet"
+  name = "appl-sub"
   resource_group_name = azurerm_resource_group.sample-resource.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes = ["10.0.0.0/24"]
+  address_prefixes = ["10.0.2.0/24"]
 }
 resource "azurerm_network_interface" "app_nic" {
   name = "appl-nic"
@@ -81,12 +99,30 @@ resource "azurerm_virtual_machine" "app_vm" {
 
   storage_os_disk {
     name = "app-os"
-    create_option = "FromImage"
+    create_option = "fromimage"
+    
   }
+
+   storage_image_reference { 
+   publisher= "MicrosoftWindowsServer"         
+   offer= "WindowsServer"           
+   sku="2019-Datacenter"        
+   version= "latest"
+ }
+
+  os_profile {
+    computer_name  = "applvm"
+    admin_username = "testadmin"
+    admin_password = "Password1234!"
+  }
+
+  os_profile_windows_config {
+     provision_vm_agent =  "false"  
+}
 }
 
 resource "azurerm_mssql_server" "dblayer" {
-  name = "db-layer"
+  name = "database-layer"
   resource_group_name = azurerm_resource_group.sample-resource.name
   version = "12.0"
   location = "eastus"  
@@ -95,10 +131,10 @@ resource "azurerm_mssql_server" "dblayer" {
 }
 
 resource "azurerm_subnet" "dbsubnet" {
-  name = "db-subnet"
+  name = "db-sub"
   resource_group_name = azurerm_resource_group.sample-resource.name
   virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes = ["10.0.0.0/24"]
+  address_prefixes = ["10.0.3.0/24"]
 }
   
 
